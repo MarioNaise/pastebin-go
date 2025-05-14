@@ -35,20 +35,19 @@ func (c *Client) CreatePaste(req *CreatePasteRequest) (string, error) {
 		apiPasteCode: {req.Content},
 		apiOption:    {"paste"},
 	}
+	params := [4][2]string{
+		{apiPasteName, req.Name},
+		{apiPasteFormat, req.Format},
+		{apiPasteExpireDate, string(req.Expiration)},
+		{apiFolderKey, req.Folder},
+	}
+	for _, pair := range params {
+		if len(pair[1]) > 0 {
+			vals.Add(pair[0], pair[1])
+		}
+	}
 	if req.CreatePasteAsUser {
 		vals.Add(apiUserKey, c.apiUserKey)
-	}
-	if len(req.Name) > 0 {
-		vals.Add(apiPasteName, req.Name)
-	}
-	if len(req.Format) > 0 {
-		vals.Add(apiPasteFormat, req.Format)
-	}
-	if len(req.Expiration) > 0 {
-		vals.Add(apiPasteExpireDate, string(req.Expiration))
-	}
-	if len(req.Folder) > 0 {
-		vals.Add(apiFolderKey, req.Folder)
 	}
 	if req.Visibility > 0 {
 		vals.Add(apiPastePrivate, fmt.Sprintf("%d", req.Visibility))
@@ -57,7 +56,7 @@ func (c *Client) CreatePaste(req *CreatePasteRequest) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return resp, nil
+	return keyFromURL(resp), nil
 }
 
 func (c *Client) GetUserPastes() ([]*Paste, error) {
@@ -75,8 +74,8 @@ func (c *Client) GetUserPastes() ([]*Paste, error) {
 		return []*Paste{}, err
 	}
 	p := make([]*Paste, len(pastes.Pastes))
-	for i, paste := range pastes.Pastes {
-		p[i] = paste.toPaste(c.apiUserName)
+	for i, pasteXML := range pastes.Pastes {
+		p[i] = pasteXML.toPaste()
 	}
 	return p, nil
 }
@@ -191,4 +190,8 @@ func newRequest(url string, vals url.Values) (*http.Request, error) {
 	}
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	return req, nil
+}
+
+func keyFromURL(url string) string {
+	return strings.TrimPrefix(url, BaseUrl+"/")
 }
