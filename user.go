@@ -2,8 +2,13 @@ package pastebin
 
 import "fmt"
 
+// AccountType represents a user account type on Pastebin.
+// normal User = 0, pro User = 1
+//
+// See https://pastebin.com/doc_api#12
 type AccountType int
 
+// User contains information about the logged in Pastebin user.
 type User struct {
 	UserName    string      `xml:"user_name"`
 	Expiration  Expiration  `xml:"user_expiration"`
@@ -15,6 +20,7 @@ type User struct {
 	AccountType AccountType `xml:"user_account_type"`
 }
 
+// String returns a formatted string of the user data.
 func (u User) String() string {
 	return fmt.Sprintf("UserName: %s, Expiration: %s, Visibility: %s, Avatar: %s, Website: %s, Email: %s, Location: %s, AccountType: %s",
 		u.UserName, u.Expiration, u.Visibility, u.Avatar, u.Website, u.Email, u.Location, u.AccountType)

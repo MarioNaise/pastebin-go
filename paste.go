@@ -5,8 +5,13 @@ import (
 	"time"
 )
 
+// Visibility defines the visibility level of a paste.
+// Public = 0, Unlisted = 1, Private = 2.
+//
+// See https://pastebin.com/doc_api#7
 type Visibility int
 
+// Paste represents a Pastebin paste entry.
 type Paste struct {
 	Key         string
 	Title       string
@@ -20,6 +25,7 @@ type Paste struct {
 	FormatShort string
 }
 
+// String returns a formatted string of the paste data.
 func (p *Paste) String() string {
 	return fmt.Sprintf("Key: %s, Title: %s, URL: %s, CreatedAt: %s, ExpireDate: %s, Visibility: %d, FormatLong: %s",
 		p.Key, p.Title, p.URL, p.CreatedAt.Format(time.RFC3339), p.ExpireDate.Format(time.RFC3339), p.Visibility, p.FormatLong)

@@ -10,6 +10,54 @@ import (
 	"strings"
 )
 
+// Expiration defines the duration before a paste expires.
+type Expiration string
+
+// CreatePasteRequest holds the parameters to create a new paste.
+//
+// See https://pastebin.com/doc_api#2
+type CreatePasteRequest struct {
+	// required.
+	// this is the text that will be written inside your paste.
+	Content string
+
+	// optional.
+	// this will be the name / title of your paste.
+	Name string
+
+	// optional.
+	// this will be the syntax highlighting value.
+	//
+	// See https://pastebin.com/doc_api#5
+	Format string
+
+	// optional.
+	// this sets the key of the folder of your paste.
+	//
+	// See https://pastebin.com/doc_api#5
+	Folder string
+
+	// optional.
+	// this sets the expiration date of your paste.
+	// default value: "N" (Never)
+	//
+	// See https://pastebin.com/doc_api#6
+	Expiration Expiration
+
+	// optional.
+	// this makes a paste public, unlisted or private.
+	// Public = 0, Unlisted = 1, Private = 2
+	//
+	// See https://pastebin.com/doc_api#7
+	Visibility Visibility
+
+	// optional.
+	// if true, this will create the paste as the currently logged in user.
+	// otherwise it will create the paste as a guest.
+	CreatePasteAsUser bool
+}
+
+// Client is the Pastebin API client.
 type Client struct {
 	apiUserName     string
 	apiUserPassword string
@@ -17,6 +65,10 @@ type Client struct {
 	apiUserKey      string
 }
 
+// NewClient creates a new Pastebin API client.
+// If a username is provided, it logs the user in to obtain a user API key.
+//
+// See https://pastebin.com/doc_api#9
 func NewClient(userName, password, devKey string) (*Client, error) {
 	client := &Client{
 		apiUserName:     userName,
@@ -29,6 +81,7 @@ func NewClient(userName, password, devKey string) (*Client, error) {
 	return client, nil
 }
 
+// CreatePaste creates a new paste using the given request parameters.
 func (c *Client) CreatePaste(req *CreatePasteRequest) (string, error) {
 	vals := url.Values{
 		apiDevKey:    {c.apiDevKey},
@@ -59,6 +112,7 @@ func (c *Client) CreatePaste(req *CreatePasteRequest) (string, error) {
 	return keyFromURL(resp), nil
 }
 
+// GetUserPastes retrieves the list of pastes created by the authenticated user.
 func (c *Client) GetUserPastes() ([]*Paste, error) {
 	resp, err := c.do(PostUrl, url.Values{
 		apiDevKey:       {c.apiDevKey},
@@ -80,6 +134,7 @@ func (c *Client) GetUserPastes() ([]*Paste, error) {
 	return p, nil
 }
 
+// DeletePaste deletes a paste by its unique key.
 func (c *Client) DeletePaste(key string) error {
 	_, err := c.do(PostUrl, url.Values{
 		apiDevKey:   {c.apiDevKey},
@@ -93,6 +148,7 @@ func (c *Client) DeletePaste(key string) error {
 	return nil
 }
 
+// GetRawUserPasteContent retrieves the raw content of a user-owned paste.
 func (c *Client) GetRawUserPasteContent(key string) (string, error) {
 	resp, err := c.do(RawUrl, url.Values{
 		apiDevKey:   {c.apiDevKey},
@@ -106,6 +162,7 @@ func (c *Client) GetRawUserPasteContent(key string) (string, error) {
 	return resp, nil
 }
 
+// GetRawPublicPasteContent fetches the raw content of a public or unlisted paste.
 func (c *Client) GetRawPublicPasteContent(key string) (string, error) {
 	resp, err := getHttpClient().Get(RawPublicUrl + "/" + key)
 	if err != nil {
@@ -119,6 +176,7 @@ func (c *Client) GetRawPublicPasteContent(key string) (string, error) {
 	return string(body), nil
 }
 
+// GetUserDetails retrieves account details of the authenticated user.
 func (c *Client) GetUserDetails() (*User, error) {
 	resp, err := c.do(PostUrl, url.Values{
 		apiDevKey:  {c.apiDevKey},

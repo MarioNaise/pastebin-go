@@ -1,5 +1,6 @@
 package pastebin
 
+// Base URLs and API endpoints for Pastebin.
 const (
 	BaseUrl      = "https://pastebin.com"
 	LoginUrl     = "https://pastebin.com/api/api_login.php"
@@ -8,6 +9,9 @@ const (
 	RawPublicUrl = "https://pastebin.com/raw"
 )
 
+// Predefined expiration times for pastes.
+//
+// See https://pastebin.com/doc_api#6
 const (
 	Never      Expiration = "N"
 	TenMinutes Expiration = "10M"
@@ -20,12 +24,16 @@ const (
 	OneYear    Expiration = "1Y"
 )
 
+// Public = 0, Unlisted = 1, Private = 2.
+//
+// See https://pastebin.com/doc_api#7
 const (
 	Public Visibility = iota
 	Unlisted
 	Private
 )
 
+// String returns the string representation of a Visibility.
 func (v Visibility) String() string {
 	switch v {
 	case Public:
@@ -39,11 +47,16 @@ func (v Visibility) String() string {
 	}
 }
 
+// NormalUser is a free Pastebin account.
+// ProUser is a paid Pastebin account.
+//
+// See https://pastebin.com/doc_api#12
 const (
 	NormalUser AccountType = iota
 	ProUser
 )
 
+// String returns the string representation of an AccountType.
 func (acc AccountType) String() string {
 	switch AccountType(acc) {
 	case NormalUser:
