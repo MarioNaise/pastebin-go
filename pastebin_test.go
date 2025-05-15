@@ -41,7 +41,8 @@ func getMockHttpClientErr() *http.Client {
 
 func TestNewClient(t *testing.T) {
 	httpClient = getMockHttpClient(&http.Response{
-		Body: io.NopCloser(strings.NewReader("testUserKey")),
+		StatusCode: 200,
+		Body:       io.NopCloser(strings.NewReader("testUserKey")),
 	})
 	client, err := NewClient("testUserName", "testPassword", "testApiKey")
 	if err != nil {
@@ -60,14 +61,16 @@ func TestNewClient(t *testing.T) {
 
 func TestCreatePaste(t *testing.T) {
 	httpClient = getMockHttpClient(&http.Response{
-		Body: io.NopCloser(strings.NewReader("testUserKey")),
+		StatusCode: 200,
+		Body:       io.NopCloser(strings.NewReader("testUserKey")),
 	})
 	client, err := NewClient("testUserName", "testPassword", "testApiKey")
 	if err != nil {
 		t.Error("Expected no error, got", err)
 	}
 	httpClient = getMockHttpClient(&http.Response{
-		Body: io.NopCloser(strings.NewReader("https://pastebin.com/pasteKey")),
+		StatusCode: 200,
+		Body:       io.NopCloser(strings.NewReader("https://pastebin.com/pasteKey")),
 	})
 	key, err := client.CreatePaste(&CreatePasteRequest{})
 	if err != nil {
@@ -78,7 +81,8 @@ func TestCreatePaste(t *testing.T) {
 	}
 
 	httpClient = getMockHttpClient(&http.Response{
-		Body: io.NopCloser(strings.NewReader("Bad API request")),
+		StatusCode: 422,
+		Body:       io.NopCloser(strings.NewReader("Bad API request")),
 	})
 	_, err = client.CreatePaste(&CreatePasteRequest{})
 	if err == nil {
@@ -97,7 +101,10 @@ func TestCreatePaste(t *testing.T) {
 			if err != nil {
 				t.Error("Expected no error parsing query, got", err)
 			}
-			return &http.Response{Body: io.NopCloser(strings.NewReader("https://pastebin.com/testKey"))}
+			return &http.Response{
+				StatusCode: 200,
+				Body:       io.NopCloser(strings.NewReader("https://pastebin.com/testKey")),
+			}
 		}),
 	}
 	res, err := client.CreatePaste(&CreatePasteRequest{Content: "testContent", Folder: "go", Visibility: Unlisted, CreatePasteAsUser: true})
@@ -129,13 +136,15 @@ func TestCreatePaste(t *testing.T) {
 
 func TestGetUserPastes(t *testing.T) {
 	httpClient = getMockHttpClient(&http.Response{
-		Body: io.NopCloser(strings.NewReader("testUserKey")),
+		StatusCode: 200,
+		Body:       io.NopCloser(strings.NewReader("testUserKey")),
 	})
 	client, err := NewClient("testUserName", "testPassword", "testApiKey")
 	if err != nil {
 		t.Error("Expected no error, got", err)
 	}
 	httpClient = getMockHttpClient(&http.Response{
+		StatusCode: 200,
 		Body: io.NopCloser(strings.NewReader(`<paste>
 			<paste_key>0b42rwhf</paste_key>
 			<paste_date>1297953260</paste_date>
@@ -171,7 +180,8 @@ func TestGetUserPastes(t *testing.T) {
 	}
 
 	httpClient = getMockHttpClient(&http.Response{
-		Body: io.NopCloser(strings.NewReader("Bad API request")),
+		StatusCode: 422,
+		Body:       io.NopCloser(strings.NewReader("Bad API request")),
 	})
 	_, err = client.GetUserPastes()
 	if err == nil {
@@ -179,7 +189,8 @@ func TestGetUserPastes(t *testing.T) {
 	}
 
 	httpClient = getMockHttpClient(&http.Response{
-		Body: io.NopCloser(strings.NewReader("<test>")),
+		StatusCode: 200,
+		Body:       io.NopCloser(strings.NewReader("<test>")),
 	})
 	_, err = client.GetUserPastes()
 	if err == nil {
@@ -189,28 +200,32 @@ func TestGetUserPastes(t *testing.T) {
 
 func TestDeletePaste(t *testing.T) {
 	httpClient = getMockHttpClient(&http.Response{
-		Body: io.NopCloser(strings.NewReader("testUserKey")),
+		StatusCode: 200,
+		Body:       io.NopCloser(strings.NewReader("testUserKey")),
 	})
 	client, err := NewClient("testUserName", "testPassword", "testApiKey")
 	if err != nil {
 		t.Error("Expected no error, got", err)
 	}
 	httpClient = getMockHttpClient(&http.Response{
-		Body: io.NopCloser(strings.NewReader("Paste Removed")),
+		StatusCode: 200,
+		Body:       io.NopCloser(strings.NewReader("Paste Removed")),
 	})
 	if err = client.DeletePaste("testPasteKey"); err != nil {
 		t.Error("Expected no error, got", err)
 	}
 
 	httpClient = getMockHttpClient(&http.Response{
-		Body: io.NopCloser(strings.NewReader("Bad API request")),
+		StatusCode: 422,
+		Body:       io.NopCloser(strings.NewReader("Bad API request")),
 	})
 	if err = client.DeletePaste("testPasteKey"); err == nil {
 		t.Error("Expected error, got nil")
 	}
 
 	httpClient = getMockHttpClient(&http.Response{
-		Body: io.NopCloser(strings.NewReader("unexpected response")),
+		StatusCode: 200,
+		Body:       io.NopCloser(strings.NewReader("unexpected response")),
 	})
 	if err = client.DeletePaste("testPasteKey"); err == nil {
 		t.Error("Expected error, got nil")
@@ -219,14 +234,16 @@ func TestDeletePaste(t *testing.T) {
 
 func TestGetRawUserPasteContent(t *testing.T) {
 	httpClient = getMockHttpClient(&http.Response{
-		Body: io.NopCloser(strings.NewReader("testUserKey")),
+		StatusCode: 200,
+		Body:       io.NopCloser(strings.NewReader("testUserKey")),
 	})
 	client, err := NewClient("testUserName", "testPassword", "testApiKey")
 	if err != nil {
 		t.Error("Expected no error, got", err)
 	}
 	httpClient = getMockHttpClient(&http.Response{
-		Body: io.NopCloser(strings.NewReader("test user paste")),
+		StatusCode: 200,
+		Body:       io.NopCloser(strings.NewReader("test user paste")),
 	})
 	res, err := client.GetRawUserPasteContent("testPasteKey")
 	if err != nil {
@@ -237,7 +254,8 @@ func TestGetRawUserPasteContent(t *testing.T) {
 	}
 
 	httpClient = getMockHttpClient(&http.Response{
-		Body: io.NopCloser(strings.NewReader("Bad API request")),
+		StatusCode: 422,
+		Body:       io.NopCloser(strings.NewReader("Bad API request")),
 	})
 	_, err = client.GetRawUserPasteContent("testPasteKey")
 	if err == nil {
@@ -251,7 +269,8 @@ func TestGetRawPublicUserPasteContent(t *testing.T) {
 		t.Error("Expected no error, got", err)
 	}
 	httpClient = getMockHttpClient(&http.Response{
-		Body: io.NopCloser(strings.NewReader("test public paste")),
+		StatusCode: 200,
+		Body:       io.NopCloser(strings.NewReader("test public paste")),
 	})
 	res, err := client.GetRawPublicPasteContent("testPasteKey")
 	if err != nil {
@@ -262,7 +281,8 @@ func TestGetRawPublicUserPasteContent(t *testing.T) {
 	}
 
 	httpClient = getMockHttpClient(&http.Response{
-		Body: io.NopCloser(strings.NewReader("Bad API request")),
+		StatusCode: 422,
+		Body:       io.NopCloser(strings.NewReader("Bad API request")),
 	})
 	_, err = client.GetRawPublicPasteContent("testPasteKey")
 	if err == nil {
@@ -278,7 +298,8 @@ func TestGetRawPublicUserPasteContent(t *testing.T) {
 	httpClient = &http.Client{
 		Transport: roundTripFunc(func(req *http.Request) *http.Response {
 			return &http.Response{
-				Body: io.NopCloser(strings.NewReader("Bad API request, invalid api_user_key")),
+				StatusCode: 422,
+				Body:       io.NopCloser(strings.NewReader(invalidApiUserKeyResponse)),
 			}
 		}),
 	}
@@ -290,21 +311,26 @@ func TestGetRawPublicUserPasteContent(t *testing.T) {
 	httpClient = &http.Client{
 		Transport: roundTripFunc(func(req *http.Request) *http.Response {
 			resp := "Bad API request"
+			status := 422
 			if req.URL.String() == RawPublicUrl+"/testPasteKey" {
-				resp = "Bad API request, invalid api_user_key"
+				resp = invalidApiUserKeyResponse
 				if client.apiUserKey == "testUserKey" {
+					status = 200
 					resp = "testResponse"
 				}
 				return &http.Response{
-					Body: io.NopCloser(strings.NewReader(resp)),
+					StatusCode: status,
+					Body:       io.NopCloser(strings.NewReader(resp)),
 				}
 			} else if req.URL.String() == LoginUrl {
 				return &http.Response{
-					Body: io.NopCloser(strings.NewReader("testUserKey")),
+					StatusCode: 200,
+					Body:       io.NopCloser(strings.NewReader("testUserKey")),
 				}
 			}
 			return &http.Response{
-				Body: io.NopCloser(strings.NewReader(resp)),
+				StatusCode: 200,
+				Body:       io.NopCloser(strings.NewReader(resp)),
 			}
 		}),
 	}
@@ -319,13 +345,15 @@ func TestGetRawPublicUserPasteContent(t *testing.T) {
 
 func TestGetUserDetails(t *testing.T) {
 	httpClient = getMockHttpClient(&http.Response{
-		Body: io.NopCloser(strings.NewReader("testUserKey")),
+		StatusCode: 200,
+		Body:       io.NopCloser(strings.NewReader("testUserKey")),
 	})
 	client, err := NewClient("testUserName", "testPassword", "testApiKey")
 	if err != nil {
 		t.Error("Expected no error, got", err)
 	}
 	httpClient = getMockHttpClient(&http.Response{
+		StatusCode: 200,
 		Body: io.NopCloser(strings.NewReader(`<user>
         <user_name>wiz_kitty</user_name>
         <user_format_short>text</user_format_short>
@@ -350,7 +378,8 @@ func TestGetUserDetails(t *testing.T) {
 	}
 
 	httpClient = getMockHttpClient(&http.Response{
-		Body: io.NopCloser(strings.NewReader("Bad API request")),
+		StatusCode: 422,
+		Body:       io.NopCloser(strings.NewReader("Bad API request")),
 	})
 	_, err = client.GetUserDetails()
 	if err == nil {
@@ -358,7 +387,8 @@ func TestGetUserDetails(t *testing.T) {
 	}
 
 	httpClient = getMockHttpClient(&http.Response{
-		Body: io.NopCloser(strings.NewReader("unexpected response")),
+		StatusCode: 200,
+		Body:       io.NopCloser(strings.NewReader("unexpected response")),
 	})
 	_, err = client.GetUserDetails()
 	if err == nil {
@@ -368,7 +398,8 @@ func TestGetUserDetails(t *testing.T) {
 
 func TestRefreshUserKey(t *testing.T) {
 	httpClient = getMockHttpClient(&http.Response{
-		Body: io.NopCloser(strings.NewReader("testUserKey")),
+		StatusCode: 200,
+		Body:       io.NopCloser(strings.NewReader("testUserKey")),
 	})
 	client, err := NewClient("testUserName", "testPassword", "testApiKey")
 	if err != nil {
@@ -379,7 +410,8 @@ func TestRefreshUserKey(t *testing.T) {
 	}
 
 	httpClient = getMockHttpClient(&http.Response{
-		Body: io.NopCloser(strings.NewReader("Bad API request")),
+		StatusCode: 422,
+		Body:       io.NopCloser(strings.NewReader("Bad API request")),
 	})
 	if err = client.refreshUserKey(); err == nil {
 		t.Error("Expected error, got nil")
@@ -391,7 +423,8 @@ func TestRefreshUserKey(t *testing.T) {
 
 func TestPost(t *testing.T) {
 	httpClient = getMockHttpClient(&http.Response{
-		Body: io.NopCloser(strings.NewReader("testResult")),
+		StatusCode: 200,
+		Body:       io.NopCloser(strings.NewReader("testResult")),
 	})
 	client, _ := NewClient("", "", "")
 	r, err := client.post("https://example.com", nil, false)
@@ -416,7 +449,8 @@ func TestPost(t *testing.T) {
 	httpClient = &http.Client{
 		Transport: roundTripFunc(func(req *http.Request) *http.Response {
 			return &http.Response{
-				Body: io.NopCloser(strings.NewReader("Bad API request, invalid api_user_key")),
+				StatusCode: 422,
+				Body:       io.NopCloser(strings.NewReader(invalidApiUserKeyResponse)),
 			}
 		}),
 	}
@@ -428,16 +462,20 @@ func TestPost(t *testing.T) {
 	httpClient = &http.Client{
 		Transport: roundTripFunc(func(req *http.Request) *http.Response {
 			if req.URL.String() == "https://example.com" {
-				resp := "Bad API request, invalid api_user_key"
+				resp := invalidApiUserKeyResponse
+				status := 422
 				if client.apiUserKey == "testUserKey" {
+					status = 200
 					resp = "testResponse"
 				}
 				return &http.Response{
-					Body: io.NopCloser(strings.NewReader(resp)),
+					StatusCode: status,
+					Body:       io.NopCloser(strings.NewReader(resp)),
 				}
 			}
 			return &http.Response{
-				Body: io.NopCloser(strings.NewReader("testUserKey")),
+				StatusCode: 200,
+				Body:       io.NopCloser(strings.NewReader("testUserKey")),
 			}
 		}),
 	}

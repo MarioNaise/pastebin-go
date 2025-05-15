@@ -14,6 +14,7 @@ import (
 type Expiration string
 
 // TODO: implement NewCreatePasteRequest func
+// TODO: improve error messages
 
 // CreatePasteRequest holds the parameters to create a new paste.
 //
@@ -202,7 +203,7 @@ func (c *Client) refreshUserKey() error {
 	return nil
 }
 
-// OPTIMIZE: remove duplicate code in do() and getPublic()
+// OPTIMIZE: remove duplicate code in post() and get()
 func (c *Client) get(url string, reauth bool) (string, error) {
 	resp, err := getHttpClient().Get(url)
 	if err != nil {
@@ -211,14 +212,15 @@ func (c *Client) get(url string, reauth bool) (string, error) {
 	defer resp.Body.Close()
 	body, _ := io.ReadAll(resp.Body)
 	res := string(body)
-	if res == "Bad API request, invalid api_user_key" && reauth {
+	if res == invalidApiUserKeyResponse &&
+		resp.StatusCode != 200 && reauth {
 		err := c.refreshUserKey()
 		if err != nil {
 			return "", err
 		}
 		return c.get(url, false)
 	}
-	if strings.HasPrefix(res, "Bad API request") {
+	if resp.StatusCode != 200 {
 		return "", errors.New(res)
 	}
 	return res, nil
@@ -236,16 +238,15 @@ func (c *Client) post(url string, vals url.Values, reauth bool) (string, error) 
 	defer resp.Body.Close()
 	body, _ := io.ReadAll(resp.Body)
 	response := string(body)
-	// OPTIMIZE: handle by status code instead of body
-	if response == "Bad API request, invalid api_user_key" &&
-		reauth {
+	if response == invalidApiUserKeyResponse &&
+		resp.StatusCode != 200 && reauth {
 		err := c.refreshUserKey()
 		if err != nil {
 			return "", err
 		}
 		return c.post(url, vals, false)
 	}
-	if strings.HasPrefix(response, "Bad API request") {
+	if resp.StatusCode != 200 {
 		return "", errors.New(response)
 	}
 	return response, nil
