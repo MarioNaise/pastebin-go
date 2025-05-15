@@ -11,6 +11,20 @@ import (
 // See https://pastebin.com/doc_api#7
 type Visibility int
 
+// String returns the string representation of a Visibility.
+func (v Visibility) String() string {
+	switch v {
+	case Public:
+		return "Public"
+	case Unlisted:
+		return "Unlisted"
+	case Private:
+		return "Private"
+	default:
+		return "Unknown"
+	}
+}
+
 // Paste represents a Pastebin paste entry.
 type Paste struct {
 	Key         string
@@ -27,7 +41,7 @@ type Paste struct {
 
 // String returns a formatted string of the paste data.
 func (p *Paste) String() string {
-	return fmt.Sprintf("Key: %s, Title: %s, URL: %s, CreatedAt: %s, ExpireDate: %s, Visibility: %d, FormatLong: %s",
+	return fmt.Sprintf("Key: %s, Title: %s, URL: %s, CreatedAt: %s, ExpireDate: %s, Visibility: %s, FormatLong: %s",
 		p.Key, p.Title, p.URL, p.CreatedAt.Format(time.RFC3339), p.ExpireDate.Format(time.RFC3339), p.Visibility, p.FormatLong)
 }
 
@@ -37,10 +51,10 @@ type pastesXML struct {
 
 type pasteXML struct {
 	Key         string `xml:"paste_key"`
-	Date        int64  `xml:"paste_date"`
 	Title       string `xml:"paste_title"`
-	Size        int    `xml:"paste_size"`
+	Date        int64  `xml:"paste_date"`
 	ExpireDate  int64  `xml:"paste_expire_date"`
+	Size        int    `xml:"paste_size"`
 	Private     int    `xml:"paste_private"`
 	FormatLong  string `xml:"paste_format_long"`
 	FormatShort string `xml:"paste_format_short"`
@@ -55,8 +69,8 @@ func (p pasteXML) toPaste() *Paste {
 		URL:         p.URL,
 		Hits:        p.Hits,
 		Size:        p.Size,
-		CreatedAt:   time.Unix(p.Date, 0),
-		ExpireDate:  time.Unix(p.ExpireDate, 0),
+		CreatedAt:   time.Unix(p.Date, 0).UTC(),
+		ExpireDate:  time.Unix(p.ExpireDate, 0).UTC(),
 		Visibility:  Visibility(p.Private),
 		FormatLong:  p.FormatLong,
 		FormatShort: p.FormatShort,

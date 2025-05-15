@@ -13,6 +13,8 @@ import (
 // Expiration defines the duration before a paste expires.
 type Expiration string
 
+// TODO: implement NewCreatePasteRequest func
+
 // CreatePasteRequest holds the parameters to create a new paste.
 //
 // See https://pastebin.com/doc_api#2
@@ -76,7 +78,7 @@ func NewClient(userName, password, devKey string) (*Client, error) {
 		apiDevKey:       devKey,
 	}
 	if len(userName) > 0 {
-		return client, client.login()
+		return client, client.refreshUserKey()
 	}
 	return client, nil
 }
@@ -105,7 +107,7 @@ func (c *Client) CreatePaste(req *CreatePasteRequest) (string, error) {
 	if req.Visibility > 0 {
 		vals.Add(apiPastePrivate, fmt.Sprintf("%d", req.Visibility))
 	}
-	resp, err := c.do(PostUrl, vals, true)
+	resp, err := c.post(PostUrl, vals, true)
 	if err != nil {
 		return "", err
 	}
@@ -114,18 +116,18 @@ func (c *Client) CreatePaste(req *CreatePasteRequest) (string, error) {
 
 // GetUserPastes retrieves the list of pastes created by the authenticated user.
 func (c *Client) GetUserPastes() ([]*Paste, error) {
-	resp, err := c.do(PostUrl, url.Values{
+	resp, err := c.post(PostUrl, url.Values{
 		apiDevKey:       {c.apiDevKey},
 		apiUserKey:      {c.apiUserKey},
 		apiResultsLimit: {"250"},
 		apiOption:       {"list"},
 	}, true)
 	if err != nil {
-		return []*Paste{}, err
+		return nil, err
 	}
 	var pastes pastesXML
 	if err := xml.Unmarshal(fmt.Appendf(nil, "<root>%s</root>", resp), &pastes); err != nil {
-		return []*Paste{}, err
+		return nil, err
 	}
 	p := make([]*Paste, len(pastes.Pastes))
 	for i, pasteXML := range pastes.Pastes {
@@ -136,7 +138,7 @@ func (c *Client) GetUserPastes() ([]*Paste, error) {
 
 // DeletePaste deletes a paste by its unique key.
 func (c *Client) DeletePaste(key string) error {
-	_, err := c.do(PostUrl, url.Values{
+	res, err := c.post(PostUrl, url.Values{
 		apiDevKey:   {c.apiDevKey},
 		apiUserKey:  {c.apiUserKey},
 		apiOption:   {"delete"},
@@ -145,12 +147,15 @@ func (c *Client) DeletePaste(key string) error {
 	if err != nil {
 		return err
 	}
+	if res != "Paste Removed" {
+		return errors.New("unexpected Pastebin response: " + res)
+	}
 	return nil
 }
 
 // GetRawUserPasteContent retrieves the raw content of a user-owned paste.
 func (c *Client) GetRawUserPasteContent(key string) (string, error) {
-	resp, err := c.do(RawUrl, url.Values{
+	resp, err := c.post(RawUrl, url.Values{
 		apiDevKey:   {c.apiDevKey},
 		apiUserKey:  {c.apiUserKey},
 		apiPasteKey: {key},
@@ -164,21 +169,12 @@ func (c *Client) GetRawUserPasteContent(key string) (string, error) {
 
 // GetRawPublicPasteContent fetches the raw content of a public or unlisted paste.
 func (c *Client) GetRawPublicPasteContent(key string) (string, error) {
-	resp, err := getHttpClient().Get(RawPublicUrl + "/" + key)
-	if err != nil {
-		return "", err
-	}
-	defer resp.Body.Close()
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return "", err
-	}
-	return string(body), nil
+	return c.get(RawPublicUrl+"/"+key, true)
 }
 
 // GetUserDetails retrieves account details of the authenticated user.
 func (c *Client) GetUserDetails() (*User, error) {
-	resp, err := c.do(PostUrl, url.Values{
+	resp, err := c.post(PostUrl, url.Values{
 		apiDevKey:  {c.apiDevKey},
 		apiUserKey: {c.apiUserKey},
 		apiOption:  {"userdetails"},
@@ -190,16 +186,11 @@ func (c *Client) GetUserDetails() (*User, error) {
 	if err := xml.Unmarshal([]byte(resp), &user); err != nil {
 		return nil, err
 	}
-
 	return &user, nil
 }
 
-func (c *Client) login() error {
-	return c.refreshUserKey()
-}
-
 func (c *Client) refreshUserKey() error {
-	resp, err := c.do(LoginUrl, url.Values{
+	resp, err := c.post(LoginUrl, url.Values{
 		apiUserName:     {c.apiUserName},
 		apiUserPassword: {c.apiUserPassword},
 		apiDevKey:       {c.apiDevKey},
@@ -211,7 +202,29 @@ func (c *Client) refreshUserKey() error {
 	return nil
 }
 
-func (c *Client) do(url string, vals url.Values, reauthenticateOnError bool) (string, error) {
+// OPTIMIZE: remove duplicate code in do() and getPublic()
+func (c *Client) get(url string, reauth bool) (string, error) {
+	resp, err := getHttpClient().Get(url)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+	body, _ := io.ReadAll(resp.Body)
+	res := string(body)
+	if res == "Bad API request, invalid api_user_key" && reauth {
+		err := c.refreshUserKey()
+		if err != nil {
+			return "", err
+		}
+		return c.get(url, false)
+	}
+	if strings.HasPrefix(res, "Bad API request") {
+		return "", errors.New(res)
+	}
+	return res, nil
+}
+
+func (c *Client) post(url string, vals url.Values, reauth bool) (string, error) {
 	req, err := newRequest(url, vals)
 	if err != nil {
 		return "", err
@@ -221,18 +234,16 @@ func (c *Client) do(url string, vals url.Values, reauthenticateOnError bool) (st
 		return "", err
 	}
 	defer resp.Body.Close()
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return "", err
-	}
+	body, _ := io.ReadAll(resp.Body)
 	response := string(body)
+	// OPTIMIZE: handle by status code instead of body
 	if response == "Bad API request, invalid api_user_key" &&
-		reauthenticateOnError {
+		reauth {
 		err := c.refreshUserKey()
 		if err != nil {
 			return "", err
 		}
-		return c.do(url, vals, false)
+		return c.post(url, vals, false)
 	}
 	if strings.HasPrefix(response, "Bad API request") {
 		return "", errors.New(response)

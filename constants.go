@@ -33,20 +33,6 @@ const (
 	Private
 )
 
-// String returns the string representation of a Visibility.
-func (v Visibility) String() string {
-	switch v {
-	case Public:
-		return "Public"
-	case Unlisted:
-		return "Unlisted"
-	case Private:
-		return "Private"
-	default:
-		return "Unknown"
-	}
-}
-
 // NormalUser is a free Pastebin account.
 // ProUser is a paid Pastebin account.
 //
@@ -55,18 +41,6 @@ const (
 	NormalUser AccountType = iota
 	ProUser
 )
-
-// String returns the string representation of an AccountType.
-func (acc AccountType) String() string {
-	switch AccountType(acc) {
-	case NormalUser:
-		return "NormalUser"
-	case ProUser:
-		return "ProUser"
-	default:
-		return "UnknownUserType"
-	}
-}
 
 const (
 	apiUserName        = "api_user_name"

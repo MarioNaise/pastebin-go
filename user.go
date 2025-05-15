@@ -8,6 +8,18 @@ import "fmt"
 // See https://pastebin.com/doc_api#12
 type AccountType int
 
+// String returns the string representation of an AccountType.
+func (acc AccountType) String() string {
+	switch AccountType(acc) {
+	case NormalUser:
+		return "NormalUser"
+	case ProUser:
+		return "ProUser"
+	default:
+		return "UnknownUserType"
+	}
+}
+
 // User contains information about the logged in Pastebin user.
 type User struct {
 	UserName    string      `xml:"user_name"`
