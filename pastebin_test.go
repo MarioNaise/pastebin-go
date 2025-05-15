@@ -421,7 +421,7 @@ func TestRefreshUserKey(t *testing.T) {
 	}
 }
 
-func TestPost(t *testing.T) {
+func TestHandleResponse(t *testing.T) {
 	httpClient = getMockHttpClient(&http.Response{
 		StatusCode: 200,
 		Body:       io.NopCloser(strings.NewReader("testResult")),
